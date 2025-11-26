@@ -1,10 +1,9 @@
-import { model, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
 const userSchema = new Schema(
-  // task -  avatar, mobile, rest kaam aap kroge
   {
     avatar: {
       type: {
@@ -62,42 +61,45 @@ const userSchema = new Schema(
       type: Date,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
-// hashing password ye akib ka task hai nhi -- nhi
+
+// making hooks
+
+// hashing password
 userSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
+  if (!this.isModified("password")) return next();
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// compair password
+// comparing password
 userSchema.methods.isPasswordMatched = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-// generateAccestoken
-userSchema.methods.generateAccessTokem = function () {
+// generating generateAccessToken
+userSchema.methods.generateAccessToken = function () {
   return jwt.sign({ id: this._id }, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRE,
   });
 };
 
-// generateRefreshToken
-userSchema.methods.generateAccessTokem = function () {
+userSchema.methods.generateRefreshToken = function () {
   return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRE,
   });
 };
 
-// verifyRefreshToken
-userSchema.methods.verifyRefreshToken = function () {
-  const Token = crypto.randomBytes(32).toString("hex");
-  const TokenExpires = Date.now() + 30 * 60 * 1000;
-  return { Token, TokenExpires };
+userSchema.methods.generateVerificationToken = function () {
+  const unHeshedToken = crypto.randomBytes(32).toString("hex");
+  const tokenExpiry = Date.now() + 30 * 60 * 1000;
+  return {
+    tokenExpiry,
+    unHeshedToken,
+  };
 };
 
-export const User = model("User", userSchema);
+export const User = mongoose.model("User", userSchema);

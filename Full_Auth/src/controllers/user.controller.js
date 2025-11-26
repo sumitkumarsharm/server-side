@@ -2,11 +2,7 @@ import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { User } from "../models/user.model.js";
-// import {
-//   sendMail,
-//   emailVerificationMailGenContent,
-//   forgotPasswordMailGenContent,
-// } from "../utils/mails.js";
+import { emailVerificationMailGenContent, sendMail } from "../utils/mails.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
   const { username, email, password, fullname, role } = req.body;
@@ -31,6 +27,8 @@ export const registerUser = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   const verificationUrl = `${process.env.BASE_URL}/api/v1/users/verify-email/${unHeshedToken}`;
+  console.log(verificationUrl);
+
   const mailGenContent = emailVerificationMailGenContent(
     username,
     verificationUrl
